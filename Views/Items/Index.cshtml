@@ -1,0 +1,206 @@
+﻿@model IEnumerable<MusicStore.Models.Item>
+
+@{
+    ViewBag.Title = "Products";
+}
+
+<style>
+    #button {
+        border-radius: 6px;
+        size: 5%;
+    }
+
+    #adv {
+        display: none;
+    }
+
+    #header {
+        background-image: url("/resources/vinyls.jpg");
+        background-repeat: no-repeat;
+        background-size: cover;
+        position: relative;
+        text-decoration-color: black;
+        opacity: 0.7;
+    }
+</style>
+<div class="jumbotron" id="header">
+    
+    <h1 style="color:black; font-family:Cambria; background-color:rgba(247, 246, 239,0.8);width:22%;border-radius:10px;"><center>Albums</center></h1>
+    
+</div>
+
+@using (Html.BeginForm("Index", "Items", FormMethod.Get))
+{
+    <b>Search By: </b>
+    @Html.DropDownList("SearchBy", new SelectList(Enum.GetValues(typeof(MusicStore.Models.Item.searcher))));
+    <br></br>
+    @Html.TextBox("Search", null, new { style = "border-radius:6px" })<input type="submit" value="Search" />
+}
+
+
+<button type="button" onclick="myfunction()">Advanced Search</button>
+<div id="adv">
+    <b> Artist: </b><input type="text" id="Artist" value="" />
+    <b> Genre: </b><input type="text" id="Genre" value="" />
+    <b> Year: </b> <input type="number" id="Year" value="" />
+
+    <input id="SearchBtn" type="submit" value="Search" />
+
+</div>
+
+
+
+
+<script>
+    function myfunction() {
+        var x = document.getElementById("adv");
+        if (x.style.display == "none") {
+            x.style.display = "block";
+        }
+        else {
+            x.style.display = "none";
+        }
+    }
+</script>
+<p>
+    @if (User.IsInRole("Admin"))
+    {
+        @Html.ActionLink("Create New", "Create")
+    }
+</p>
+<table class="table" style="background-color:rgba(255, 255, 255,0.6);">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.SerialNumber)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Name)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Artist)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Genre)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Year)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Description)
+        </th>
+        <th>
+            Store Name
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Price)
+        </th>
+        <th></th>
+    </tr>
+    @if (Model.Count() == 0)
+    {
+        <tr>
+            <td> No Match </td>
+        </tr>
+    }
+    else
+    {
+        <tbody id="Results">
+            @foreach (var item in Model)
+            {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.SerialNumber)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Artist)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Genre)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Year)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.branch.StoreName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Price)
+                </td>
+                <td style="width:15%;">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        @Html.ActionLink("Edit", "Edit", new { id = item.Id })
+                    } |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                    @if (User.IsInRole("Admin"))
+                    {
+                        @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                    }
+                </td>
+            
+            </tr>
+            }
+        </tbody>
+    }
+</table>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        console.log("here");
+        $("#SearchBtn").click(function () {
+            var Artist = $("#Artist").val();
+            var Genre = $("#Genre").val();
+            var Year = $("#Year").val();
+            if (Year == "") {
+                Year = 0;
+            }
+            var data = {
+                Artist: Artist,
+                Genre: Genre,
+                Year: Year
+            }
+            console.log(data);
+            $.ajax({
+                type:"POST",
+                url: "/Items/GetSearchingResults",
+                data: data,
+                success: function(res){
+                    console.log(res.length);
+                    console.log(res);
+                    console.log(res[0]);
+                    console.log(res[4]);
+                   // console.log(JSON.parse(res));
+                    var parsed = JSON.parse(res);
+                    console.log(parsed.length);
+                    var idp;
+                    $("#Results").empty();
+                    if (parsed.length == 0) {
+                        $("#Results").append('<tr><td>No Match</td></tr>');
+                    }
+                    for (var i = 0; i < parsed.length; i++) {
+
+
+                       console.log(parsed[i]);
+
+                        $("#Results").append(`<tr><td>${parsed[i].SerialNumber}</td><td>${parsed[i].Name}</td>
+                            <td>${parsed[i].Artist}</td><td>${parsed[i].Genre}</td><td>${parsed[i].Year}</td>
+                                <td>${parsed[i].Description}</td><td>${parsed[i].StoreName}</td><td>${parsed[i].Price}</td>
+                                  <td>@if (User.IsInRole("Admin")){ <a href="/Items/Edit/${parsed[i].Id}">Edit</a>} ${" | "}
+                                  <a href="/Items/Details/${parsed[i].Id}">Details</a> ${" | "}
+                                    @if (User.IsInRole("Admin")) {<a href="/Items/Delete/${parsed[i].Id}">Delete</a>}</td></tr>`);
+
+                    }
+                }
+            });
+        });
+    });
+                  
+</script>

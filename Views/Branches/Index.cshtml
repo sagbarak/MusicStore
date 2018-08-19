@@ -1,0 +1,178 @@
+﻿@model IEnumerable<MusicStore.Models.Branch>
+
+@{
+    ViewBag.Title = "Branches";
+}
+<style>
+    #header {
+        background-image: url("/resources/musicstore2.jpg");
+        background-repeat: no-repeat;
+        background-size: cover;
+        position: relative;
+        text-decoration-color: black;
+        opacity: 0.7;
+    }
+
+</style>
+<div class="jumbotron" id="header">
+
+    <h1 style="transition: width 2s; color:black; font-family:Cambria; background-color:rgba(247, 246, 239,0.8);width:22%;border-radius:10px;"><center>Our Stores</center></h1>
+    #div2 {transition-timing-function: ease;}
+</div>
+
+<div id="adv">
+    <h4>Search for a store:</h4>
+    <b> Name: </b><input type="text" id="Name" value="" />
+    <b> Phone: </b><input type="text" id="Phone" value="" />
+    <b> City: </b> <input type="text" id="City" value="" />
+
+    <input id="SearchBtn" type="submit" value="Search" />
+
+</div>
+<p>
+    @if (User.IsInRole("Admin"))
+    {
+        @Html.ActionLink("Create New", "Create")
+    }
+</p>
+<table class="table" style="background-color:rgba(255, 255, 255,0.3)">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.StoreName)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.PhoneNumber)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Email)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Address)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.City)
+        </th>
+        <th></th>
+    </tr>
+
+    <tbody id="Results">
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StoreName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.PhoneNumber)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Email)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Address)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.City)
+                </td>
+                <td>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        @Html.ActionLink("Edit", "Edit", new { id = item.Id })
+                    } |
+                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
+                    @if (User.IsInRole("Admin"))
+                    {
+                        @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                    }
+
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        console.log("here");
+        $("#SearchBtn").click(function () {
+            var Name = $("#Name").val();
+            var City = $("#City").val();
+            var Phone = $("#Phone").val();
+            if (Phone == "") {
+                Phone = 0;
+            }
+            var data = {
+                Name: Name,
+                Phone: Phone,
+                City: City
+            }
+            console.log(data);
+            $.ajax({
+                type:"POST",
+                url: "/Branches/GetSearchingResults",
+                data: data,
+                success: function(res){
+                    console.log(res.length);
+                    console.log(res);
+                    console.log(res[0]);
+                    console.log(res[4]);
+                   // console.log(JSON.parse(res));
+                    var parsed = JSON.parse(res);
+                    console.log(parsed.length);
+                    var idp;
+                    $("#Results").empty();
+                    if (parsed.length == 0) {
+                        $("#Results").append('<tr><td>No Match</td></tr>');
+                    }
+                    for (var i = 0; i < parsed.length; i++) {
+
+
+                       console.log(parsed[i]);
+
+                        $("#Results").append(`<tr><td>${parsed[i].StoreName}</td><td>${parsed[i].PhoneNumber}</td>
+                            <td>${parsed[i].Email}</td><td>${parsed[i].Address}</td><td>${parsed[i].City}</td>
+                                  <td>@if (User.IsInRole("Admin")){ <a href="/Branches/Edit/${parsed[i].Id}">Edit</a>} ${" | "}
+                                  <a href="/Branches/Details/${parsed[i].Id}">Details</a> ${" | "}
+                                    @if (User.IsInRole("Admin")) {<a href="/Branches/Delete/${parsed[i].Id}">Delete</a>}</td></tr>`);
+
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+
+
+<div id="googleMap" style="width:40%;height:250px; float:right;"></div>
+
+<script>
+    function myMap() {
+        var MyCenter = new google.maps.LatLng(32.778221, 34.984645);
+        var mapProp = {
+            center: new google.maps.LatLng(32.778221, 34.984645),
+            zoom: 17,
+        };
+        var marker = new google.maps.Marker({ position: MyCenter });
+        var map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+        marker.setMap(map);
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBwaRzrH_QYlmUR1GbBNbhfWyY5P8lPvM4&callback=myMap"></script>
+<aside>
+    <section style="background-color:rgba(255, 255, 255,0.5); width:25%; border-radius:10px; padding-left:10px;">
+        <h3>Contact</h3>
+        <address>
+            Our main office in:
+            Peretz Bernshtein 10<br />
+            Haifa!<br />
+            <abbr title="Phone">P:</abbr>
+            04-8339633
+        </address>
+        <address>
+            <strong>Our Mail:</strong>   <a href="mailto:music@musicstore.com">music@musicstore.com</a><br />
+        </address>
+    </section>
+</aside>

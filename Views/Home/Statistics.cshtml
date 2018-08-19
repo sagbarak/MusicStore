@@ -1,0 +1,255 @@
+﻿
+@{
+    ViewBag.Title = "Statistics";
+}
+
+
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Testing Pie Chart</title>
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.1.3"></script>
+
+
+    <style type="text/css">
+        .slice text {
+            font-size: 15pt;
+            font-family: fantasy;
+        }
+        @@font-face {
+            font-family: myFont;
+            src: url(/resources/KaushanScript-Regular.otf);
+        }
+            div1{
+                 font-family:myFont;
+             }
+}
+    </style>
+</head>
+<body>
+    <div1>
+        <p style="font-size:45px; font-family:myFont;"> Statistics</p>
+    </div1>
+
+    <table align="left" style="background-color:rgba(255, 255, 255,0.8); border-radius:20px; position:center">
+        <tbody>
+            <tr>
+                <td id="here" style="padding-left:70px; padding-top:50px;">
+                    <canvas id="Albums" width="500" height="100"
+                            style="border:1px solid #d3d3d3;"></canvas>
+                </td>
+                <td id="here2" style="padding-right:50px;">
+                    <canvas id="Stores" width="500" height="100"
+                            style="border:1px solid #d3d3d3;">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+<script>
+
+    var canvas = document.getElementById("Albums");
+    var ctx = canvas.getContext("2d");
+    ctx.font = "30px Arial";
+    ctx.fillText("Top three best seller albums", 10, 50);
+
+</script>
+<script>
+
+    var canvas = document.getElementById("Stores");
+    var ctx = canvas.getContext("2d");
+    ctx.font = "30px Arial";
+    ctx.fillText("Top three bigest collection stores", 10, 50);
+
+</script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script type="text/javascript">
+    $.ajax({
+        type: "POST",
+        url: "/Items/getBestAlbum",
+        success: function (res) {
+            var parsed = JSON.parse(res);
+
+            var max1 = 0;
+            var max2 = 0;
+            var max3 = 0;
+            var sum = 0;
+            var index1 = 0;
+            var index2 = 0;
+            var index3 = 0;
+            for (var i = 0; i < parsed.length; i++) {
+                for (var j = 0; j < parsed[i].Sales.length; j++) {
+                    sum = sum + parsed[i].Sales[j];
+                }
+                if (sum > max1) {
+                    max3 = max2;
+                    max2 = max1;
+                    max1 = sum;
+                    index3 = index2;
+                    index2 = index1;
+                    index1 = i;
+                }
+                else if (sum > max2) {
+                    max3 = max2;
+                    max2 = sum;
+                    index3 = index2;
+                    index2 = i;
+                }
+                else if (sum > max3) {
+                    max3 = sum;
+                    index3 = i;
+                }
+                sum = 0;
+            }
+
+            var w = 750,                        //width
+                h = 750,                            //height
+                r = 250,                            //radius
+                color = d3.scale.category20c();     //builtin range of colors
+            data = [{ "label": parsed[index1].Names, "value": max1 },
+            { "label": parsed[index2].Names, "value": max2 },
+            { "label": parsed[index3].Names, "value": max3 }];
+            console.log(data);
+            var vis = d3.select("#here")
+                .append("svg:svg")              //create the SVG element inside the <body>
+                .data([data])                   //associate our data with the document
+                .attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+                .attr("height", h)
+                .append("svg:g")                //make a group to hold our pie chart
+                .attr("transform", "translate(" + r + "," + r + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+            var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+                .outerRadius(r);
+            var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+                .value(function (d) { return d.value; });    //we must tell it out to access the value of each element in our data array
+            var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+                .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties)
+                .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+                .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+                .attr("class", "slice");    //allow us to style things in the slices (like text)
+            arcs.append("svg:path")
+                .attr("fill", function (d, i) { return color(i); }) //set the color for each slice to be chosen from the color function defined above
+                .attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+            arcs.append("svg:text")                                     //add a label to each slice
+                .attr("transform", function (d) {                    //set the label's origin to the center of the arc
+                    //we have to make sure to set these before calling arc.centroid
+                    d.innerRadius = 0;
+                    d.outerRadius = r;
+                    return "translate(" + arc.centroid(d) + ")";        //this gives us a pair of coordinates like [50, 50]
+                })
+                .attr("text-anchor", "middle")                          //center the text on it's origin
+                .text(function (d, i) { return data[i].label; });        //get the label from our original data array
+        }
+    });
+
+
+    $.ajax({
+        type: "POST",
+        url: "/Branches/getLargestBranch",
+        success: function (res) {
+            var parsed = JSON.parse(res);
+            console.log(parsed);
+            var max1 = 0;
+            var max2 = 0;
+            var max3 = 0;
+            var count = 0;
+            var index1 = 0;
+            var index2 = 0;
+            var index3 = 0;
+            for (var i = 0; i < parsed.length; i++) {
+                count = parsed[i].AlbumsNum[0].length;
+                console.log(count);
+                //for (var j = 0; j < parsed[i].AlbumsNum.length; j++) {
+                //    count++;
+                //}
+                if (count > max1) {
+                    max3 = max2;
+                    max2 = max1;
+                    max1 = count;
+                    index3 = index2;
+                    index2 = index1;
+                    index1 = i;
+                }
+                else if (count > max2) {
+                    max3 = max2;
+                    max2 = count;
+                    index3 = index2;
+                    index2 = i;
+                }
+                else if (count > max3) {
+                    max3 = count;
+                    index3 = i;
+                }
+                count = 0;
+            }
+            data = [{ "label": parsed[index1].Names, "value": max1 },
+            { "label": parsed[index2].Names, "value": max2 },
+            { "label": parsed[index3].Names, "value": max3 }];
+            console.log(data);
+            var margin = { top: 20, right: 20, bottom: 250, left: 40 },
+                width = 600 - margin.left - margin.right,
+                height = 600 - margin.top - margin.bottom;
+
+            // set the ranges
+            var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+            var y = d3.scale.linear().range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .ticks(10);
+
+            // add the SVG element
+            var svg = d3.select("#here2").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+            // load the data
+            data.forEach(function (d) {
+                d.label = d.label;
+                d.value = +d.value;
+            });
+
+            // scale the range of the data
+            x.domain(data.map(function (d) { return d.label; }));
+            y.domain([0, d3.max(data, function (d) { return d.value; })]);
+
+            // add axis
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", "-.55em")
+                .attr("transform", "rotate(-45)");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("transform", "rotate(-45)")
+                .attr("y", 5)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Value");
+
+            // Add bar chart
+            svg.selectAll("bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function (d) { return x(d.label); })
+                .attr("width", x.rangeBand())
+                .attr("y", function (d) { return y(d.value); })
+                .attr("height", function (d) { return height - y(d.value); });
+        }
+    });
+</script>
